@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sushilingo Karteikarten 🍣</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #5c4dff;
+            --text-main: #ffffff;
+            --text-sec: #aaaaaa;
+            --topbar-bg: #000000;
+            --sushi-color: #ff9f43;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: center; align-items: center; padding: 15px 20px; background-color: var(--topbar-bg); border-bottom: 1px solid #333; }
+        .lang-flags { background: #2c2c2e; padding: 6px 16px; border-radius: 20px; font-size: 18px; letter-spacing: 2px; cursor: pointer; user-select: none; transition: 0.2s; }
+        .lang-flags:active { opacity: 0.7; transform: scale(0.95); }
+
+        /* Main Content */
+        .main-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+        
+        .flashcard { background-color: var(--card-bg); width: 100%; max-width: 400px; border-radius: 24px; padding: 30px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 15px; min-height: 400px; justify-content: space-between; }
+        
+        .level-badge { background: #2c2c2e; color: var(--text-sec); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        
+        .word-display { display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 28px; font-weight: bold; color: var(--primary); margin: 10px 0; text-align: center; line-height: 1.3; width: 100%; }
+        
+        .audio-btn { flex-shrink: 0; background: #2c2c2e; border: none; border-radius: 12px; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; cursor: pointer; transition: 0.2s; }
+        .audio-btn:active { transform: scale(0.9); }
+        .audio-btn-small { width: 38px; height: 38px; font-size: 16px; border-radius: 10px; }
+
+        /* Answer Section */
+        .answer-section { width: 100%; border-top: 1px dashed #333; padding-top: 15px; margin-top: 5px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .answer-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+        .answer-text { font-size: 22px; font-weight: 600; color: #2ed573; }
+        .pronun-text { font-size: 14px; color: var(--text-sec); font-style: italic; letter-spacing: 0.5px; }
+
+        .reveal-btn { width: 100%; background: var(--primary); border: none; border-radius: 16px; color: white; font-size: 18px; font-weight: bold; padding: 18px; cursor: pointer; transition: 0.2s; }
+        .reveal-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        /* 5-Level Rating Buttons */
+        .rating-container { display: none; width: 100%; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .rating-label { font-size: 12px; color: var(--text-sec); text-align: center; margin-bottom: 2px; }
+        .rating-buttons { display: flex; gap: 6px; width: 100%; }
+        
+        .rate-btn { flex: 1; border: none; border-radius: 12px; padding: 12px 0; font-size: 14px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .rate-btn:active { transform: scale(0.92); }
+        .rate-btn span { font-size: 10px; opacity: 0.8; font-weight: normal; }
+
+        .lvl-1 { background-color: #ff4757; }
+        .lvl-2 { background-color: #ffa502; }
+        .lvl-3 { background-color: #eccc68; color: #000; }
+        .lvl-4 { background-color: #7bed9f; color: #000; }
+        .lvl-5 { background-color: #2ed573; }
+
+        /* Settings View */
+        .settings-card { background-color: var(--card-bg); width: 100%; max-width: 400px; border-radius: 24px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 18px; max-height: 80vh; overflow-y: auto; }
+        .settings-title { font-size: 20px; font-weight: bold; text-align: center; color: var(--text-main); }
+        
+        .setting-item { display: flex; justify-content: space-between; align-items: center; background: #2c2c2e; padding: 15px; border-radius: 16px; }
+        .setting-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+        .setting-label { font-size: 15px; font-weight: bold; }
+        .setting-desc { font-size: 12px; color: var(--text-sec); }
+
+        /* Form Hinzufügen */
+        .section-header { font-size: 13px; font-weight: bold; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+        .add-form { display: flex; flex-direction: column; gap: 10px; background: #2c2c2e; padding: 15px; border-radius: 16px; }
+        .form-input, .form-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #444; background: #1e1e1e; color: white; font-size: 14px; outline: none; }
+        .form-input:focus, .form-select:focus { border-color: var(--primary); }
+        .add-action-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .add-action-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        /* User Added Items List */
+        .user-items-container { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
+        .user-item-card { display: flex; justify-content: space-between; align-items: center; background: #2c2c2e; padding: 10px 14px; border-radius: 10px; font-size: 13px; }
+        .user-item-info { display: flex; flex-direction: column; text-align: left; }
+        .user-item-jp { font-weight: bold; color: var(--primary); }
+        .user-item-de { color: var(--text-sec); font-size: 12px; }
+        .delete-btn { background: none; border: none; font-size: 16px; cursor: pointer; opacity: 0.7; }
+        .delete-btn:hover { opacity: 1; }
+
+        /* Toggle Switch UI */
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .reset-action-btn { background: #ff4757; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 5px; }
+        .reset-action-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        /* Bottom Nav */
+        .bottom-nav { display: flex; justify-content: space-around; padding: 15px; background-color: var(--topbar-bg); border-top: 1px solid #333; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-sec); font-size: 12px; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="lang-flags" id="lang-toggle" onclick="toggleLanguageDirection()">🇯🇵 ➔ 🇩🇪</div>
+    </div>
+
+    <div class="main-container">
+        <!-- Karteikarten Ansicht -->
+        <div class="flashcard" id="flashcard-view">
+            <div class="level-badge" id="card-level">Stufe 1</div>
+            
+            <div class="word-display">
+                <button class="audio-btn" onclick="playPromptAudio()">🔊</button>
+                <span id="current-word">Lade...</span>
+            </div>
+
+            <button class="reveal-btn" id="reveal-btn" onclick="revealAnswer()">Antwort anzeigen</button>
+
+            <div class="answer-section" id="answer-section" style="display: none;">
+                <div class="answer-row">
+                    <div class="answer-text" id="current-answer">...</div>
+                    <button class="audio-btn audio-btn-small" onclick="playAnswerAudio()">🔊</button>
+                </div>
+                
+                <div class="pronun-text" id="current-pronun">Aussprache: -</div>
+
+                <div class="rating-container" id="rating-container" style="display: flex;">
+                    <div class="rating-label">Wie gut gewusst?</div>
+                    <div class="rating-buttons">
+                        <button class="rate-btn lvl-1" onclick="rateCurrentItem(1)">1<span>Gar nicht</span></button>
+                        <button class="rate-btn lvl-2" onclick="rateCurrentItem(2)">2<span>Schwer</span></button>
+                        <button class="rate-btn lvl-3" onclick="rateCurrentItem(3)">3<span>Mittel</span></button>
+                        <button class="rate-btn lvl-4" onclick="rateCurrentItem(4)">4<span>Gut</span></button>
+                        <button class="rate-btn lvl-5" onclick="rateCurrentItem(5)">5<span>Gelernt</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Einstellungen Ansicht -->
+        <div class="settings-card" id="settings-view" style="display: none;">
+            <div class="settings-title">⚙ Einstellungen</div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">Eigene Liste nutzen</div>
+                    <div class="setting-desc" id="list-mode-desc">Standard-Empfehlungen geladen</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="custom-list-toggle" onchange="toggleListSource(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Formular: Neuer Eintrag -->
+            <div class="section-header">➕ Neuer Eintrag</div>
+            <div class="add-form">
+                <select id="new-type" class="form-select">
+                    <option value="words">Wort 📖</option>
+                    <option value="sentences">Satz 📄</option>
+                </select>
+                <input type="text" id="new-jp" placeholder="Japanisch / Romaji (z.B. sushi)" class="form-input">
+                <input type="text" id="new-kana" placeholder="Hiragana (z.B. すし) - optional" class="form-input">
+                <input type="text" id="new-pronun" placeholder="Lautschrift (z.B. ss-u-schi) - optional" class="form-input">
+                <input type="text" id="new-de" placeholder="Deutsch (z.B. Sushi)" class="form-input">
+                <button class="add-action-btn" onclick="addNewItem()">+ Hinzufügen</button>
+            </div>
+
+            <!-- Liste der manuell hinzugefügten Einträge -->
+            <div class="section-header">📝 Meine manuellen Einträge</div>
+            <div class="user-items-container" id="user-items-list">
+                <!-- Dynamisch erzeugt -->
+            </div>
+
+            <button class="reset-action-btn" onclick="resetProgress()">Gelernten Fortschritt zurücksetzen</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" id="tab-sentences" onclick="switchTab('sentences')"><div class="nav-icon">📄</div>Sätze</div>
+        <div class="nav-item active" id="tab-words" onclick="switchTab('words')"><div class="nav-icon">📖</div>Wörter</div>
+        <div class="nav-item" id="tab-settings" onclick="switchTab('settings')"><div class="nav-icon">⚙</div>Einstellungen</div>
+    </div>
+
+    <script>
+        // ==========================================
+        // STANDARD-LISTEN (Empfohlen)
+        // ==========================================
+        
+        const defaultVocabulary = [
+            { id: "w1", jp: "mizu", kana: "みず", pronun: "mi-ssu", de: "Wasser" },
+            { id: "w2", jp: "densha", kana: "でんしゃ", pronun: "denn-scha", de: "Zug / Bahn" },
+            { id: "w3", jp: "eki", kana: "えき", pronun: "e-ki", de: "Bahnhof" },
+            { id: "w4", jp: "arigatou", kana: "ありがとう", pronun: "a-ri-ga-tou", de: "Danke" },
+            { id: "w5", jp: "kuruma", kana: "くるま", pronun: "ku-ru-ma", de: "Auto" },
+            { id: "w6", jp: "taberu", kana: "たべる", pronun: "ta-be-ru", de: "Essen" },
+            { id: "w7", jp: "nomu", kana: "のむ", pronun: "no-mu", de: "Trinken" },
+            { id: "w8", jp: "iku", kana: "いく", pronun: "i-ku", de: "Gehen / Fahren" },
+            { id: "w9", jp: "oishii", kana: "おいしい", pronun: "o-i-schi-i", de: "Lecker" },
+            { id: "w10", jp: "kippu", kana: "きっぷ", pronun: "kip-pu", de: "Ticket / Fahrkarte" }
+        ];
+
+        const defaultSentences = [
+            { id: "s1", jp: "Watashi wa David desu", kana: "わたしは デビッド です", pronun: "wa-ta-schi wa Da-vid de-ss", de: "Ich bin David" },
+            { id: "s2", jp: "Daikoku PA wa doko desu ka?", kana: "だいこく PA は どこ です か", pronun: "dai-ko-ku PA wa do-ko de-ss ka?", de: "Wo ist Daikoku PA?" },
+            { id: "s3", jp: "Shinkansen no kippu o kaimashita.", kana: "しんかんせん の きっぷ を かいました", pronun: "schin-kan-sen no kip-pu o kai-ma-schi-ta", de: "Ich habe ein Shinkansen-Ticket gekauft." },
+            { id: "s4", jp: "Fuji-san ga kirei desu.", kana: "ふじさん が きれい です", pronun: "fu-dschi-san ga ki-rei de-ss", de: "Der Mt. Fuji ist schön." },
+            { id: "s5", jp: "Kore wa ikura desu ka?", kana: "これ は いくら です か", pronun: "ko-re wa i-ku-ra de-ss ka?", de: "Wie viel kostet das?" },
+            { id: "s6", jp: "Arigatou gozaimasu.", kana: "ありがとうございます", pronun: "a-ri-ga-tou go-tsai-mass", de: "Vielen Dank" },
+            { id: "s7", jp: "Oishii desu!", kana: "おいしい です", pronun: "o-i-schi-i de-ss", de: "Das ist lecker!" }
+        ];
+
+        // ==========================================
+        // BASE MANUELLE LISTE (Aus Excel)
+        // ==========================================
+
+        const customVocabularyBase = [
+            { id: "cw1", jp: "doko", kana: "どこ", pronun: "do-ko", de: "Wo" },
+            { id: "cw2", jp: "eki", kana: "えき", pronun: "e-ki", de: "Bahnhof" },
+            { id: "cw3", jp: "kudasai", kana: "ください", pronun: "ku-da-ssai", de: "Bitte (höflich)" },
+            { id: "cw4", jp: "hitotsu", kana: "ひとつ", pronun: "hi-to-tsu", de: "Ein Stück" },
+            { id: "cw5", jp: "watashitachi", kana: "わたしたち", pronun: "wa-ta-schi-ta-tschi", de: "Wir / Unsere" },
+            { id: "cw6", jp: "watashi", kana: "わたし", pronun: "wa-ta-schi", de: "Ich" },
+            { id: "cw7", jp: "koko", kana: "ここ", pronun: "ko-ko", de: "Hier" },
+            { id: "cw8", jp: "soko", kana: "そこ", pronun: "so-ko", de: "Dort" },
+            { id: "cw9", jp: "asoko", kana: "あそこ", pronun: "a-so-ko", de: "Dort drüben" },
+            { id: "cw10", jp: "okane", kana: "おかね", pronun: "o-ka-ne", de: "Geld" },
+            { id: "cw11", jp: "mizu", kana: "みず", pronun: "mi-ssu", de: "Wasser" },
+            { id: "cw12", jp: "hashi", kana: "はし", pronun: "ha-schi", de: "Essstäbchen" },
+            { id: "cw13", jp: "o-dera", kana: "おてら", pronun: "o-de-ra", de: "Tempel" },
+            { id: "cw14", jp: "kore", kana: "これ", pronun: "ko-re", de: "Das hier" },
+            { id: "cw15", jp: "Oosutoria", kana: "オーストリア", pronun: "ooh-ssu-to-ri-a", de: "Österreich" }
+        ];
+
+        const customSentencesBase = [
+            { id: "cs1", jp: "Sumimasen", kana: "すみません", pronun: "su-mi-ma-senn", de: "Entschuldigung / Verzeihung" },
+            { id: "cs2", jp: "Eki wa doko desu ka?", kana: "えき は どこ です か", pronun: "e-ki wa do-ko de-ss ka?", de: "Wo ist der Bahnhof?" },
+            { id: "cs3", jp: "Toire wa doko desu ka?", kana: "トイレ は どこ です か", pronun: "to-i-re wa do-ko de-ss ka?", de: "Wo ist die Toilette?" },
+            { id: "cs4", jp: "Koko wa doko desu ka?", kana: "ここ は どこ です か", pronun: "ko-ko wa do-ko de-ss ka?", de: "Wo bin ich hier?" },
+            { id: "cs5", jp: "Kore o kudasai.", kana: "これ を ください", pronun: "ko-re o ku-da-ssai", de: "Das hier bitte." },
+            { id: "cs6", jp: "O-kaikei o kudasai.", kana: "おかいけい を ください", pronun: "o-kai-kei o ku-da-ssai", de: "Die Rechnung bitte." },
+            { id: "cs7", jp: "Oishii desu!", kana: "おいしい です", pronun: "o-i-schi-i de-ss", de: "Es ist lecker!" },
+            { id: "cs8", jp: "Kore wa ikura desu ka?", kana: "これ は いくら です か", pronun: "ko-re wa i-ku-ra de-ss ka?", de: "Wie viel kostet das?" },
+            { id: "cs9", jp: "Kaado de haraemasu ka?", kana: "カード で はらえます か", pronun: "kaa-do de ha-ra-e-mass ka?", de: "Kann ich mit Karte bezahlen?" },
+            { id: "cs10", jp: "Kore wa nan desu ka?", kana: "これ は なん です か", pronun: "ko-re wa nan de-ss ka?", de: "Was ist das?" },
+            { id: "cs11", jp: "Ohayou gozaimasu.", kana: "おはよう ございます", pronun: "o-ha-you go-tsai-mass", de: "Guten Morgen" },
+            { id: "cs12", jp: "Chekkuin o onegaishimasu.", kana: "チェックイン を おねがいします", pronun: "tschek-ku-in o o-ne-gai-schi-mass", de: "Das Einchecken bitte." },
+            { id: "cs13", jp: "Watashi wa David desu. Yoyaku ga arimasu.", kana: "わたし は デビッド です。 よやく が あります", pronun: "wa-ta-schi wa Da-vid de-ss. yo-ya-ku ga a-ri-mass", de: "Ich bin David. Ich habe eine Reservierung." },
+            { id: "cs14", jp: "Kore wa watashi no pasupooto desu.", kana: "これ は わたし の パスポート です", pronun: "ko-re wa wa-ta-schi no pa-ss-poo-to de-ss", de: "Das hier ist mein Reisepass." },
+            { id: "cs15", jp: "Chikin raisu o kudasai.", kana: "チキン ライス を ください", pronun: "tschi-kin rai-ssu o ku-da-ssai", de: "Hähnchen mit Reis bitte." },
+            { id: "cs16", jp: "Kore o hitotsu kudasai.", kana: "これ を ひとつ ください", pronun: "ko-re o hi-to-tsu ku-da-ssai", de: "Das hier einmal bitte." },
+            { id: "cs17", jp: "Takeout de onegaishimasu.", kana: "テイクアウト で おねがいします", pronun: "tei-ku-au-to de o-ne-gai-schi-mass", de: "Zum Mitnehmen" },
+            { id: "cs18", jp: "Kore wa watashitachi no pasupooto desu.", kana: "これ は わたしたち の パスポート です", pronun: "ko-re wa wa-ta-schi-ta-tschi no pa-ss-poo-to de-ss", de: "Das hier sind unsere Reisepässe." },
+            { id: "cs19", jp: "Futari desu.", kana: "ふたり です", pronun: "fu-ta-ri de-ss", de: "Wir sind zwei Personen." },
+            { id: "cs20", jp: "Watashi wa chikin raisu o tabemasu.", kana: "わたし は チキン ライス を たべます", pronun: "wa-ta-schi wa tschi-kin rai-ssu o ta-be-mass", de: "Ich esse Hähnchen mit Reis." },
+            { id: "cs21", jp: "Raamen o kudasai.", kana: "ラーメン を ください", pronun: "raa-men o ku-da-ssai", de: "Ramen bitte." },
+            { id: "cs22", jp: "Kore wa sugoi desu!", kana: "これ は すごい です", pronun: "ko-re wa su-goi de-ss", de: "Das hier ist mega cool!" },
+            { id: "cs23", jp: "Oosutoria kara kimashita.", kana: "オーストリア から きました", pronun: "ooh-ssu-to-ri-a ka-ra ki-ma-schi-ta", de: "Ich komme aus Österreich." },
+            { id: "cs24", jp: "Daijoubu desu.", kana: "だいじょうぶ です", pronun: "dai-dshou-bu de-ss", de: "Es ist okay." }
+        ];
+
+        // ==========================================
+        // APP LOGIK
+        // ==========================================
+
+        let currentMode = 'words'; 
+        let currentItem = null;
+        let isJpToDe = true; 
+        let useCustomList = JSON.parse(localStorage.getItem('sushiUseCustomList')) || false;
+        let userAddedItems = JSON.parse(localStorage.getItem('sushiUserAddedItems')) || [];
+        let itemLevels = JSON.parse(localStorage.getItem('sushiCardLevels')) || {};
+
+        function initSettingsUI() {
+            const toggle = document.getElementById('custom-list-toggle');
+            toggle.checked = useCustomList;
+            updateSettingsText();
+            renderUserItems();
+        }
+
+        function updateSettingsText() {
+            const desc = document.getElementById('list-mode-desc');
+            desc.innerText = useCustomList ? "Eigene Liste geladen" : "Standard-Empfehlungen geladen";
+        }
+
+        function toggleListSource(isCustom) {
+            useCustomList = isCustom;
+            localStorage.setItem('sushiUseCustomList', JSON.stringify(useCustomList));
+            updateSettingsText();
+            if (currentMode !== 'settings') nextItem();
+        }
+
+        // Hinzufügen von neuen Wörtern/Sätzen
+        function addNewItem() {
+            const type = document.getElementById('new-type').value;
+            const jp = document.getElementById('new-jp').value.trim();
+            const kana = document.getElementById('new-kana').value.trim() || jp;
+            const pronun = document.getElementById('new-pronun').value.trim() || jp;
+            const de = document.getElementById('new-de').value.trim();
+
+            if (!jp || !de) {
+                alert("Bitte gib mindestens das japanische Wort/Satz und die deutsche Übersetzung ein!");
+                return;
+            }
+
+            const newItem = {
+                id: "user_" + Date.now(),
+                type: type,
+                jp: jp,
+                kana: kana,
+                pronun: pronun,
+                de: de
+            };
+
+            userAddedItems.push(newItem);
+            localStorage.setItem('sushiUserAddedItems', JSON.stringify(userAddedItems));
+
+            // Formular zurücksetzen
+            document.getElementById('new-jp').value = "";
+            document.getElementById('new-kana').value = "";
+            document.getElementById('new-pronun').value = "";
+            document.getElementById('new-de').value = "";
+
+            renderUserItems();
+            alert("Eintrag erfolgreich hinzugefügt!");
+        }
+
+        function deleteUserItem(id) {
+            userAddedItems = userAddedItems.filter(item => item.id !== id);
+            localStorage.setItem('sushiUserAddedItems', JSON.stringify(userAddedItems));
+            renderUserItems();
+        }
+
+        function renderUserItems() {
+            const container = document.getElementById('user-items-list');
+            container.innerHTML = "";
+
+            if (userAddedItems.length === 0) {
+                container.innerHTML = `<div style="font-size:12px; color:var(--text-sec); text-align:center; padding:10px;">Noch keine eigenen Einträge hinzugefügt.</div>`;
+                return;
+            }
+
+            userAddedItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'user-item-card';
+                card.innerHTML = `
+                    <div class="user-item-info">
+                        <div class="user-item-jp">${item.jp} (${item.kana})</div>
+                        <div class="user-item-de">${item.de} [${item.type === 'words' ? 'Wort' : 'Satz'}]</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteUserItem('${item.id}')">🗑️</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getItemLevel(id) {
+            return itemLevels[id] || 1;
+        }
+
+        function setItemLevel(id, lvl) {
+            itemLevels[id] = lvl;
+            localStorage.setItem('sushiCardLevels', JSON.stringify(itemLevels));
+        }
+
+        function toggleLanguageDirection() {
+            isJpToDe = !isJpToDe;
+            document.getElementById('lang-toggle').innerText = isJpToDe ? "🇯🇵 ➔ 🇩🇪" : "🇩🇪 ➔ 🇯🇵";
+            if (currentMode !== 'settings') nextItem();
+        }
+
+        function switchTab(mode) {
+            document.getElementById('tab-words').classList.remove('active');
+            document.getElementById('tab-sentences').classList.remove('active');
+            document.getElementById('tab-settings').classList.remove('active');
+            document.getElementById(`tab-${mode}`).classList.add('active');
+
+            if (mode === 'settings') {
+                document.getElementById('flashcard-view').style.display = 'none';
+                document.getElementById('settings-view').style.display = 'flex';
+                currentMode = 'settings';
+                return;
+            }
+
+            document.getElementById('settings-view').style.display = 'none';
+            document.getElementById('flashcard-view').style.display = 'flex';
+
+            currentMode = mode;
+            nextItem();
+        }
+
+        function getCurrentDataPool() {
+            let basePool = [];
+            if (currentMode === 'sentences') {
+                basePool = useCustomList ? [...customSentencesBase] : [...defaultSentences];
+            } else {
+                basePool = useCustomList ? [...customVocabularyBase] : [...defaultVocabulary];
+            }
+
+            if (useCustomList) {
+                const userFiltered = userAddedItems.filter(item => item.type === currentMode);
+                basePool = basePool.concat(userFiltered);
+            }
+
+            return basePool;
+        }
+
+        function getActiveItems() {
+            let dataArray = getCurrentDataPool();
+            return dataArray.filter(item => getItemLevel(item.id) < 5);
+        }
+
+        function nextItem() {
+            if (currentMode === 'settings') return;
+
+            let activeItems = getActiveItems();
+
+            document.getElementById('answer-section').style.display = 'none';
+            document.getElementById('reveal-btn').style.display = 'block';
+
+            if (activeItems.length === 0) {
+                document.getElementById('card-level').innerText = "Fertig! 🎉";
+                document.getElementById('current-word').innerText = "Alle Karten gelernt!";
+                document.getElementById('reveal-btn').style.display = 'none';
+                return;
+            }
+
+            let weightedPool = [];
+            activeItems.forEach(item => {
+                let lvl = getItemLevel(item.id);
+                let weight = 6 - lvl;
+                for (let i = 0; i < weight; i++) {
+                    weightedPool.push(item);
+                }
+            });
+
+            currentItem = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+
+            let currentLvl = getItemLevel(currentItem.id);
+            document.getElementById('card-level').innerText = `Stufe ${currentLvl}`;
+
+            let displayWord = isJpToDe ? currentItem.jp : currentItem.de;
+            let wordDisplay = document.getElementById('current-word');
+            wordDisplay.innerText = displayWord;
+            wordDisplay.style.fontSize = displayWord.length > 20 ? '20px' : '26px';
+        }
+
+        function revealAnswer() {
+            if (!currentItem) return;
+
+            let answerText = isJpToDe ? currentItem.de : `${currentItem.jp} (${currentItem.kana})`;
+            document.getElementById('current-answer').innerText = answerText;
+
+            // Aussprachezeile setzen
+            let pronunDisplay = currentItem.pronun ? `Aussprache: [${currentItem.pronun}]` : "";
+            document.getElementById('current-pronun').innerText = pronunDisplay;
+
+            document.getElementById('reveal-btn').style.display = 'none';
+            document.getElementById('answer-section').style.display = 'flex';
+
+            if (!isJpToDe) {
+                playAnswerAudio();
+            }
+        }
+
+        function rateCurrentItem(rating) {
+            if (!currentItem) return;
+
+            setItemLevel(currentItem.id, rating);
+            nextItem();
+        }
+
+        function resetProgress() {
+            if (confirm("Möchtest du wirklich alle gelernten Karten zurücksetzen?")) {
+                itemLevels = {};
+                localStorage.removeItem('sushiCardLevels');
+                alert("Fortschritt wurde zurückgesetzt!");
+                if (currentMode !== 'settings') nextItem();
+            }
+        }
+
+        // Audio-Funktionen
+        function playPromptAudio() {
+            if (!currentItem) return;
+            let text = isJpToDe ? (currentItem.kana || currentItem.jp) : currentItem.de;
+            let lang = isJpToDe ? 'ja-JP' : 'de-DE';
+            speakText(text, lang);
+        }
+
+        function playAnswerAudio() {
+            if (!currentItem) return;
+            let text = isJpToDe ? currentItem.de : (currentItem.kana || currentItem.jp);
+            let lang = isJpToDe ? 'de-DE' : 'ja-JP';
+            speakText(text, lang);
+        }
+
+        function speakText(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+
+            window.speechSynthesis.cancel();
+
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 0.85;
+
+            let voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                let matchedVoice = voices.find(v => v.lang.startsWith(lang.substring(0, 2)));
+                if (matchedVoice) utterance.voice = matchedVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Init
+        initSettingsUI();
+        nextItem();
+    </script>
+</body>
+</html>
